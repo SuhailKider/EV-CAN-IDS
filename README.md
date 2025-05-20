@@ -29,21 +29,10 @@ You can download them from the official source:
 
 ## Tools and Technologies
 
-- Python (3.x)
+- Python 3
 - Google Colab (main notebook)
 - pandas, scikit-learn, matplotlib, seaborn
 - Isolation Forest (unsupervised anomaly detection algorithm)
-
----
-
-## Project Structure
-
-EV-CAN-IDS/
-├── data/ # Dataset files (not uploaded due to size)
-├── notebooks/
-│ └── ev_can_ids.ipynb # Main development notebook
-├── imgs/ # Graphs and screenshots (to be added)
-├── README.md # This file
 
 ---
 
