@@ -64,14 +64,3 @@ Once I complete the testing and visualizations, I will upload screenshots and ev
 
 ---
 
-## License
-
-This project is open-source and released under the **MIT License**.
-
----
-
-## Author
-
-**Suhail Kider**  
-Student ID: K2525456  
-Final-year Cybersecurity student at Kingston University
