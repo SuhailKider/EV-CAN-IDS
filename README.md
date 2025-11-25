@@ -81,11 +81,3 @@ Validation steps include:
 
 ---
 
-Author
-Suhail Kider
-BSc Cyber Security & Digital Forensics
-Kingston University London
-LinkedIn: [https://www.linkedin.com/in/suhail-kider/](https://www.linkedin.com/in/suhail-kider/)
-
-Email: kider.suhail@gmail.com
-
