@@ -1,66 +1,81 @@
-# EV CAN Bus Intrusion Detection System
+EV CAN Bus Intrusion Detection System (IDS)
 
-This is my final-year project for my BSc Cybersecurity degree at Kingston University. In this project, I have developed a lightweight anomaly-based Intrusion Detection System (IDS) that detects cyberattacks on Electric Vehicle (EV) CAN bus networks using machine learning.
+A Lightweight Machine Learning–Based IDS for Electric Vehicle CAN Networks
 
----
+Overview
 
-## Overview
+This project implements an anomaly-based Intrusion Detection System (IDS) for Electric Vehicle (EV) CAN bus networks using machine learning.
+The CAN bus is critical for EV communication but lacks authentication, integrity checks, and encryption. This makes it vulnerable to cyberattacks such as:
 
-Electric Vehicles (EVs) rely on the Controller Area Network (CAN) to allow different electronic components (ECUs) to communicate with each other. However, the CAN protocol lacks built-in security, making it vulnerable to attacks like message spoofing, denial-of-service (DoS), and fuzzing.
+DoS (Denial of Service)
 
-This project aims to design and build an IDS using Python that can analyze CAN traffic and detect anomalies in real-time using the Isolation Forest algorithm.
+Fuzzy Attacks
 
----
+Impersonation Attacks
 
-## Dataset
+To address this, a lightweight IDS was developed using the Isolation Forest algorithm, trained exclusively on normal CAN traffic from the HCRL CAN Intrusion Dataset.
+Over 4.7 million messages were processed, with extensive feature engineering and full evaluation.
 
-I used the **HCRL CAN Intrusion Dataset**, a publicly available dataset containing both normal and malicious CAN traffic. It includes four types of files:
+Key Features
+Unsupervised ML Model (Isolation Forest)
 
-- `Attack_free_dataset.txt` (normal data)
-- `DoS_attack_dataset.txt`
-- `Fuzzy_attack_dataset.txt`
-- `Impersonation_attack_dataset.txt`
+No labelled attack data required
 
-> Note: Due to GitHub’s file size limitations, I haven’t uploaded these dataset files here.  
-You can download them from the official source:  
-👉 https://ocslab.hksecurity.net/Dataset/CAN-intrusion-dataset
+Efficient for real-time or embedded ECU deployment
 
----
+Advanced Feature Engineering
 
-## Tools and Technologies
+Extracts behaviour-based indicators including:
 
-- Python 3
-- Google Colab (main notebook)
-- pandas, scikit-learn, matplotlib, seaborn
-- Isolation Forest (unsupervised anomaly detection algorithm)
+Message timing & delta intervals
 
----
+Rolling statistics
 
-## Methodology
+Burstiness & jitter
 
-I followed the CRISP-DM approach:
+Payload entropy
 
-1. **Understanding the problem** – Why CAN bus needs protection in EVs
-2. **Data understanding** – Loaded and explored the HCRL dataset
-3. **Data preparation** – Cleaned data and engineered useful features
-4. **Modeling** – Trained an Isolation Forest on normal data only
-5. **Evaluation** – Tested the model on attack data and analyzed results
-6. **Documentation** – Collected graphs and findings for final report
+Bit-flip count
 
----
+Payload correlation
 
-## Current Status
+Sequence prediction error
 
-- [x] Dataset loaded and explored
-- [x] Isolation Forest model implemented
-- [ ] Evaluation graphs and metrics to be finalized
-- [ ] Final documentation and GitHub polishing
+End-to-End Implementation
 
----
+Includes:
 
-## Results (To be added soon)
+Raw CAN dataset parsing
 
-Once I complete the testing and visualizations, I will upload screenshots and evaluation metrics here.
+Cleaning & preprocessing
 
----
+Feature engineering
 
+Model training
+
+Anomaly scoring
+
+Threshold testing
+
+Full performance evaluation
+
+Visualisation outputs
+
+Tested on Real EV Dataset (HCRL)
+
+Attack datasets include DoS, Fuzzy, and Impersonation scenarios.
+
+Performance Summary
+
+Optimal Threshold Selected: 0.1
+
+Metric	Score
+Accuracy	84.80%
+Recall (Attack Detection)	89.32%
+Precision	93.63%
+False Positive Rate (FPR)	59.51%
+TP / FP / TN / FN	1,983,963 / 134,997 / 91,854 / 237,203
+
+Support
+
+If you found this project useful, please star ⭐ the repository and share it with others working on EV cybersecurity.
