@@ -1,81 +1,94 @@
-EV CAN Bus Intrusion Detection System (IDS)
-
+# EV CAN Bus Intrusion Detection System (IDS)
 A Lightweight Machine Learning–Based IDS for Electric Vehicle CAN Networks
 
-Overview
+---
 
-This project implements an anomaly-based Intrusion Detection System (IDS) for Electric Vehicle (EV) CAN bus networks using machine learning.
-The CAN bus is critical for EV communication but lacks authentication, integrity checks, and encryption. This makes it vulnerable to cyberattacks such as:
+## Overview
 
-DoS (Denial of Service)
+This project implements an anomaly-based Intrusion Detection System (IDS) for Electric Vehicle (EV) Controller Area Network (CAN) communication using machine learning.  
+The CAN bus lacks authentication, message integrity and encryption, making it vulnerable to cyberattacks.  
+This IDS uses an unsupervised Isolation Forest model to detect abnormal CAN behaviour based on timing and payload patterns.
 
-Fuzzy Attacks
+The system processes more than 4.7 million CAN messages from the HCRL CAN Intrusion Dataset, with engineered behavioural features to detect:
+- DoS attacks  
+- Fuzzy attacks  
+- Impersonation attacks  
 
-Impersonation Attacks
+The pipeline was fully implemented in Python using Google Colab.
 
-To address this, a lightweight IDS was developed using the Isolation Forest algorithm, trained exclusively on normal CAN traffic from the HCRL CAN Intrusion Dataset.
-Over 4.7 million messages were processed, with extensive feature engineering and full evaluation.
+---
 
-Key Features
-Unsupervised ML Model (Isolation Forest)
+## Key Features
 
-No labelled attack data required
+- Unsupervised anomaly detection using Isolation Forest  
+- Behaviour-based feature engineering, including:  
+  - Timing intervals  
+  - Rolling statistics  
+  - Burstiness and jitter  
+  - Payload entropy  
+  - Bit-flip count  
+  - Payload correlation  
+  - Sequence prediction error  
+- Complete end-to-end workflow:
+  - Dataset parsing  
+  - Feature extraction  
+  - Model training  
+  - Anomaly score computation  
+  - Prediction using a fixed threshold of 0.1  
+  - Full evaluation and visualisation  
 
-Efficient for real-time or embedded ECU deployment
+---
 
-Advanced Feature Engineering
+## Performance Summary
 
-Extracts behaviour-based indicators including:
+Threshold Used: 0.1
 
-Message timing & delta intervals
+| Metric | Score |
+|--------|--------|
+| Accuracy | 84.80% |
+| Recall (Attack Detection Rate) | 89.32% |
+| Precision | 93.63% |
+| False Positive Rate | 59.51% |
+| TP / FP / TN / FN | 1,983,963 / 134,997 / 91,854 / 237,203 |
 
-Rolling statistics
+---
 
-Burstiness & jitter
+## Testing and Validation
 
-Payload entropy
+Validation steps include:
+- Dataset conversion verification  
+- Feature engineering execution logs  
+- Isolation Forest training confirmation  
+- Anomaly score and prediction generation  
+- Evaluation using accuracy, recall, precision and FPR  
+- Confusion matrix  
+- Classification report  
+- Anomaly score distribution  
+- Full visual analytics  
 
-Bit-flip count
+All testing evidence is documented in the Final Report.
 
-Payload correlation
+---
 
-Sequence prediction error
+## Technologies Used
 
-End-to-End Implementation
+- Python 3
+- pandas  
+- NumPy  
+- SciPy  
+- scikit-learn  
+- Matplotlib  
+- Google Colab  
+- HCRL CAN Intrusion Dataset  
 
-Includes:
+---
 
-Raw CAN dataset parsing
+Author
+Suhail Kider
+BSc Cyber Security & Digital Forensics
+Kingston University London
+LinkedIn: [https://www.linkedin.com/in/suhail-kider/](https://www.linkedin.com/in/suhail-kider/)
+Email: kider.suhail@gmail.com
 
-Cleaning & preprocessing
-
-Feature engineering
-
-Model training
-
-Anomaly scoring
-
-Threshold testing
-
-Full performance evaluation
-
-Visualisation outputs
-
-Tested on Real EV Dataset (HCRL)
-
-Attack datasets include DoS, Fuzzy, and Impersonation scenarios.
-
-Performance Summary
-
-Optimal Threshold Selected: 0.1
-
-Metric	Score
-Accuracy	84.80%
-Recall (Attack Detection)	89.32%
-Precision	93.63%
-False Positive Rate (FPR)	59.51%
-TP / FP / TN / FN	1,983,963 / 134,997 / 91,854 / 237,203
-
-Support
-
-If you found this project useful, please star ⭐ the repository and share it with others working on EV cybersecurity.
+License
+This project is licensed under the MIT License. See the LICENSE file for details.
