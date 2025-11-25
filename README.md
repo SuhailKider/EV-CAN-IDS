@@ -66,8 +66,6 @@ Validation steps include:
 - Anomaly score distribution  
 - Full visual analytics  
 
-All testing evidence is documented in the Final Report.
-
 ---
 
 ## Technologies Used
@@ -88,7 +86,6 @@ Suhail Kider
 BSc Cyber Security & Digital Forensics
 Kingston University London
 LinkedIn: [https://www.linkedin.com/in/suhail-kider/](https://www.linkedin.com/in/suhail-kider/)
+
 Email: kider.suhail@gmail.com
 
-License
-This project is licensed under the MIT License. See the LICENSE file for details.
