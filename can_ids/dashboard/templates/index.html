@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EV CAN IDS · Live Monitor</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z' fill='%2322c55e'/></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div id="attack-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z"/><path class="bolt" d="M17.5 8 11 18h4.5l-1 6L21 14h-4.5z"/></svg>
+    <div>
+      <h1>EV CAN Bus IDS</h1>
+      <p class="sub">Isolation Forest anomaly detection · live monitor</p>
+    </div>
+  </div>
+  <div id="status" class="status status-secure" role="status" aria-live="polite">
+    <span class="dot"></span><span id="status-text">CONNECTING…</span>
+  </div>
+  <div class="top-controls">
+    <div class="meta">
+      <span title="Traffic source" id="source">–</span>
+      <span title="Bus time">⏱ <b id="bus-time">0.0</b>s</span>
+    </div>
+    <button class="btn ghost" id="btn-pause" title="Pause / resume the bus">⏸ Pause</button>
+    <label class="select-wrap" title="Simulation speed">
+      <select id="speed">
+        <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option><option value="2">2×</option>
+      </select>
+    </label>
+    <button class="btn ghost icon" id="btn-sound" title="Audible alerts" aria-pressed="true">🔔</button>
+    <button class="btn ghost icon" id="btn-theme" title="Toggle light / dark">◐</button>
+  </div>
+</header>
+
+<main class="grid">
+  <!-- KPI row -->
+  <section class="kpis" aria-label="Key indicators">
+    <div class="kpi"><span class="k-label">Bus load</span><span class="k-val" id="k-fps">–</span><span class="k-unit">frames / s</span></div>
+    <div class="kpi"><span class="k-label">Frames analysed</span><span class="k-val" id="k-total">–</span><span class="k-unit" id="k-ids">– IDs on bus</span></div>
+    <div class="kpi"><span class="k-label">Flagged</span><span class="k-val" id="k-flagged">–</span><span class="k-unit">frames / s</span></div>
+    <div class="kpi" id="kpi-incidents"><span class="k-label">Active incidents</span><span class="k-val" id="k-incidents">0</span><span class="k-unit" id="k-inc-total">0 total</span></div>
+    <div class="kpi"><span class="k-label">Detection rate</span><span class="k-val" id="k-recall">–</span><span class="k-unit">recall (live)</span></div>
+    <div class="kpi"><span class="k-label">False-positive rate</span><span class="k-val" id="k-fpr">–</span><span class="k-unit">normal frames flagged</span></div>
+    <div class="kpi"><span class="k-label">Latency</span><span class="k-val" id="k-lat">–</span><span class="k-unit" id="k-cap">µs / frame</span></div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="card span-8" id="card-timeline">
+    <div class="card-head">
+      <h2>Bus traffic &amp; anomaly score <span class="hint">last 60 s</span></h2>
+      <div class="legend">
+        <span><i class="sw sw-normal"></i>Normal</span>
+        <span><i class="sw sw-attack"></i>Injected attack</span>
+        <span><i class="sw sw-flag"></i>Flagged</span>
+        <span><i class="sw sw-score"></i>Peak score</span>
+        <span><i class="sw sw-thr"></i>Threshold</span>
+      </div>
+    </div>
+    <canvas id="chart-traffic" height="230" aria-label="Frames per second over time"></canvas>
+    <canvas id="chart-score" height="150" aria-label="Anomaly score over time"></canvas>
+  </section>
+
+  <!-- Attack console -->
+  <section class="card span-4" id="card-attack">
+    <div class="card-head">
+      <h2>Attack simulator <span class="hint">red-team console</span></h2>
+      <button class="btn small danger-ghost" id="btn-stop">■ Stop all</button>
+    </div>
+    <div class="attack-grid">
+      <button class="attack-btn" data-kind="dos">
+        <span class="a-title">DoS flood</span>
+        <span class="a-desc">ID 0x000 every 1 ms – wins arbitration, starves ECUs</span>
+      </button>
+      <button class="attack-btn" data-kind="fuzzy">
+        <span class="a-title">Fuzzy</span>
+        <span class="a-desc">Random IDs + random payloads at 400 msg/s</span>
+      </button>
+      <button class="attack-btn" data-kind="impersonation">
+        <span class="a-title">Impersonation</span>
+        <span class="a-desc">Forged frames on a real ECU's ID</span>
+      </button>
+    </div>
+    <div class="attack-opts">
+      <label>Duration <output id="dur-out">8 s</output>
+        <input type="range" id="duration" min="2" max="30" value="8">
+      </label>
+      <label>Impersonation target
+        <select id="target"></select>
+      </label>
+    </div>
+    <div id="active-attacks" class="active-attacks"></div>
+    <div class="scenario">
+      <button class="btn small ghost" id="btn-scenario" title="DoS → fuzzy → impersonation, 20 s apart">▶ Run full demo scenario</button>
+    </div>
+  </section>
+
+  <!-- Alerts -->
+  <section class="card span-7" id="card-alerts">
+    <div class="card-head">
+      <h2>Live alerts <span class="badge" id="unacked">0</span></h2>
+      <div class="head-actions">
+        <div class="seg" role="tablist" id="alert-filter">
+          <button class="on" data-f="all">All</button>
+          <button data-f="active">Active</button>
+          <button data-f="unack">Unacked</button>
+        </div>
+        <button class="btn small ghost" id="btn-ack-all">✓ Ack all</button>
+        <a class="btn small ghost" href="/api/incidents.csv" download>⭳ CSV</a>
+        <a class="btn small ghost" href="/api/report.json" download>⭳ Report</a>
+      </div>
+    </div>
+    <div id="alerts" class="alerts" aria-live="polite">
+      <div class="empty">No incidents yet. The bus is clean — launch an attack to see detection in action.</div>
+    </div>
+  </section>
+
+  <!-- Detection quality -->
+  <section class="card span-5" id="card-quality">
+    <div class="card-head">
+      <h2>Detection quality <span class="hint" id="q-hint">frame-level, ground truth from injector</span></h2>
+      <div class="seg" role="tablist" id="mode" title="Which detector flags frames">
+        <button data-m="hybrid">Hybrid</button>
+        <button data-m="ml">ML only</button>
+      </div>
+    </div>
+    <div class="quality">
+      <div class="cm" aria-label="Confusion matrix">
+        <div class="cm-corner"></div><div class="cm-h">Pred. normal</div><div class="cm-h">Pred. attack</div>
+        <div class="cm-v">Normal</div><div class="cm-c good" id="cm-tn">–</div><div class="cm-c bad" id="cm-fp">–</div>
+        <div class="cm-v">Attack</div><div class="cm-c bad" id="cm-fn">–</div><div class="cm-c good" id="cm-tp">–</div>
+      </div>
+      <div class="scores">
+        <div class="score-row"><span>Accuracy</span><b id="m-acc">–</b></div>
+        <div class="score-row"><span>Precision</span><b id="m-prec">–</b></div>
+        <div class="score-row"><span>Recall</span><b id="m-rec">–</b></div>
+        <div class="score-row"><span>F1</span><b id="m-f1">–</b></div>
+        <div class="score-row"><span>Flagged by</span><b id="m-by">–</b></div>
+        <div id="per-attack" class="per-attack"></div>
+      </div>
+    </div>
+    <canvas id="chart-hist" height="120" aria-label="Anomaly score distribution"></canvas>
+    <div class="threshold">
+      <label for="thr">Decision threshold <output id="thr-out">–</output></label>
+      <input type="range" id="thr" min="0.30" max="0.90" step="0.005">
+      <button class="btn small ghost" id="btn-thr-reset" title="Back to calibrated threshold">Calibrated</button>
+    </div>
+  </section>
+
+  <!-- CAN ID monitor -->
+  <section class="card span-7" id="card-ids">
+    <div class="card-head">
+      <h2>CAN ID monitor <span class="hint">top talkers, last 10 s</span></h2>
+    </div>
+    <div class="table-wrap">
+      <table class="ids">
+        <thead><tr><th>ID</th><th>ECU</th><th class="num">Rate</th><th class="num">Expected</th><th class="num">Frames</th><th class="num">Flagged</th><th>Score</th><th>Last payload</th></tr></thead>
+        <tbody id="ids-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Frame log -->
+  <section class="card span-5" id="card-frames">
+    <div class="card-head">
+      <h2>Live frame log <span class="hint">candump</span></h2>
+      <label class="check"><input type="checkbox" id="only-flagged"> flagged only</label>
+    </div>
+    <div class="frames" id="frames"></div>
+  </section>
+
+  <!-- Event log -->
+  <section class="card span-12 events-card">
+    <div class="card-head"><h2>Event log</h2>
+      <div class="head-actions"><button class="btn small ghost" id="btn-reset" title="Clear statistics and incidents">↺ Reset stats</button></div>
+    </div>
+    <ul id="events" class="events"></ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <span id="model-info">–</span>
+  <span>HCRL-compatible · 12 behavioural features · Isolation Forest</span>
+</footer>
+
+<div id="toasts" class="toasts" aria-live="assertive"></div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
