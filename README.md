@@ -3,6 +3,8 @@ A Lightweight Machine Learning–Based IDS for Electric Vehicle CAN Networks, wi
 
 ![Live dashboard during a multi-stage attack](docs/screenshots/03_multi_attack.png)
 
+🎬 **Explainer video (3½ min, narrated):** [`docs/video/ev_can_ids_explainer.mp4`](docs/video/ev_can_ids_explainer.mp4). It covers the CAN bus problem, the three attacks, how detection works, a live dashboard demo and the results.
+
 ---
 
 ## Overview
@@ -172,7 +174,8 @@ can_ids/
   dashboard/      Flask app (SSE live updates), HTML/CSS/JS with no external dependencies
   cli.py          python -m can_ids {dashboard,monitor,train,evaluate}
 tests/            pytest suite
-docs/             screenshots and presentation run-sheet
+docs/             screenshots, presentation run-sheet, explainer video
+  video/          scenes.html + make_video.py (regenerates the video with offline TTS)
 ```
 
 ## Technologies Used

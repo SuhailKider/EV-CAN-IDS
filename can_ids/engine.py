@@ -262,7 +262,8 @@ class DetectionEngine:
             "labelled": n > 0,
             "accuracy": (tp + tn) / n if n else None,
             "recall": tp / (tp + fn) if tp + fn else None,
-            "precision": tp / (tp + fp) if tp + fp else None,
+            # Precision is undefined until at least one attack frame has been seen.
+            "precision": tp / (tp + fp) if tp + fp and tp + fn else None,
             "fpr": fp / (fp + tn) if fp + tn else None,
             "f1": 2 * tp / (2 * tp + fp + fn) if tp else None,
             "per_attack": {k: {**v, "recall": v["detected"] / v["total"] if v["total"] else None}
