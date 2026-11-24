@@ -1,0 +1,409 @@
+<title>EV CAN Bus IDS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single reading column (~68ch) with full-width "instrument" bands for the frame,
+   the pipeline and the results, like pages of a vehicle test report. */
+:root {
+  --paper: #f2f4f6;
+  --panel: #ffffff;
+  --ink: #0e1620;
+  --ink-2: #44515f;
+  --rule: #d5dbe2;
+  --signal: #0b7fa6;        /* CAN-high cyan: the one accent */
+  --signal-soft: #dcf0f7;
+  --alert: #c8322b;          /* semantic: attack */
+  --alert-soft: #fbe4e2;
+  --ok: #1f8a4c;             /* semantic: detected */
+  --ok-soft: #dff3e6;
+  --muted-bar: #9aa6b3;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0c1117; --panel: #121a23; --ink: #e5ecf3; --ink-2: #9cabb9; --rule: #243243;
+    --signal: #43c6ea; --signal-soft: #0f2a36; --alert: #ff6b62; --alert-soft: #3a1714;
+    --ok: #4ccf86; --ok-soft: #10301f; --muted-bar: #5d6b7a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0c1117; --panel: #121a23; --ink: #e5ecf3; --ink-2: #9cabb9; --rule: #243243;
+  --signal: #43c6ea; --signal-soft: #0f2a36; --alert: #ff6b62; --alert-soft: #3a1714;
+  --ok: #4ccf86; --ok-soft: #10301f; --muted-bar: #5d6b7a; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 17px/1.62 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; line-height: 1.05; text-wrap: balance; margin: 0; letter-spacing: .005em; }
+h1 { font-size: clamp(3.2rem, 9vw, 6.4rem); font-weight: 700; text-transform: uppercase; letter-spacing: .01em; }
+h2 { font-size: clamp(2rem, 4.4vw, 2.9rem); text-transform: uppercase; }
+h3 { font-size: 1.45rem; text-transform: uppercase; letter-spacing: .02em; }
+p { margin: 0; }
+a { color: var(--signal); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 4px; }
+.label { font: 600 .78rem/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--signal); }
+.mono { font-family: var(--f-mono); }
+section { padding-block: 64px 0; display: grid; gap: 22px; }
+.lede { font-size: 1.2rem; color: var(--ink-2); max-width: 60ch; }
+.prose { display: grid; gap: 14px; max-width: 68ch; }
+.prose strong { font-weight: 600; }
+
+/* ---------- hero ---------- */
+.hero { padding-block: 56px 0; display: grid; gap: 22px; }
+.hero h1 span { color: var(--signal); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px;
+  font: 500 .95rem/1 var(--f-body); text-decoration: none; border: 1px solid var(--rule);
+  color: var(--ink); background: var(--panel);
+}
+.btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn:hover { border-color: var(--signal); }
+
+/* CAN frame anatomy */
+.frame-band { margin-top: 18px; background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 18px 14px; display: grid; gap: 12px; }
+.frame-scroll { overflow-x: auto; }
+.frame { display: grid; grid-template-columns: 1fr 11fr 1fr 1fr 1fr 4fr 26fr 15fr 1fr 2fr 7fr; min-width: 860px; gap: 2px; }
+.seg { display: grid; gap: 6px; }
+.seg .bits { height: 44px; border-radius: 4px; background: var(--paper); border: 1px solid var(--rule);
+  display: grid; place-items: center; font: 500 .82rem var(--f-mono); color: var(--ink-2); overflow: hidden; white-space: nowrap; padding: 0 4px; }
+.seg .name { font: 600 .68rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); text-align: center; }
+.seg.id .bits { background: var(--signal-soft); border-color: var(--signal); color: var(--ink); }
+.seg.data .bits { background: var(--alert-soft); border-color: var(--alert); color: var(--ink); }
+.frame-note { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .92rem; color: var(--ink-2); }
+.frame-note b { color: var(--ink); font-weight: 600; }
+
+/* ---------- numbers ---------- */
+.figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+.fig { padding: 16px 16px 4px 0; display: grid; gap: 4px; align-content: start; }
+.fig + .fig { padding-left: 16px; border-left: 1px solid var(--rule); }
+.fig .v { font: 600 clamp(2.2rem, 5vw, 3.2rem)/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.fig .v small { font-size: .5em; color: var(--ink-2); font-weight: 500; }
+.fig .k { font-size: .9rem; color: var(--ink-2); line-height: 1.4; }
+@media (max-width: 760px) {
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fig:nth-child(3) { border-left: 0; padding-left: 0; }
+  .fig:nth-child(n+3) { border-top: 1px solid var(--rule); }
+}
+
+/* ---------- pipeline ---------- */
+.pipe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+.step { padding: 16px 16px 16px 0; border-top: 2px solid var(--signal); display: grid; gap: 8px; align-content: start; position: relative; }
+.step + .step { padding-left: 16px; }
+.step::before { counter-increment: step; content: "0" counter(step); font: 600 .8rem var(--f-mono); color: var(--signal); }
+.step p { font-size: .95rem; color: var(--ink-2); line-height: 1.5; }
+.step .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font: 500 .72rem/1.3 var(--f-mono); border: 1px solid var(--rule); border-radius: 4px; padding: 2px 6px; color: var(--ink-2); background: var(--panel); }
+@media (max-width: 860px) {
+  .pipe { grid-template-columns: 1fr; }
+  .step + .step { padding-left: 0; }
+}
+
+/* ---------- results chart ---------- */
+.results { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 860px) { .results { grid-template-columns: 1fr; } }
+.chart { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; display: grid; gap: 18px; }
+.legend { display: flex; gap: 18px; font-size: .85rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+.metric { display: grid; gap: 6px; }
+.metric .mname { font: 600 .78rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.bar { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; align-items: center; }
+.track { height: 14px; background: var(--paper); border-radius: 3px; position: relative; overflow: hidden; }
+.track b { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+.track.if b { background: var(--muted-bar); }
+.track.hy b { background: var(--ok); }
+.bar .num { font: 500 .88rem var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.axis { display: flex; justify-content: space-between; font: .72rem var(--f-mono); color: var(--ink-2); padding-right: 74px; }
+.why { display: grid; gap: 16px; }
+.why ol { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+.callout { border-left: 3px solid var(--signal); padding: 4px 0 4px 16px; color: var(--ink-2); }
+
+/* ---------- table ---------- */
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .95rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+th { font: 600 .74rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+td.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.n { text-align: right; }
+td.win { color: var(--ok); font-weight: 600; }
+
+/* ---------- screenshots ---------- */
+.shots { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .shots { grid-template-columns: 1fr; } }
+figure { margin: 0; display: grid; gap: 8px; }
+figure .img { border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: #0b1017; aspect-ratio: 16 / 10; max-width: 100%; }
+figure img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
+figcaption { font-size: .88rem; color: var(--ink-2); }
+
+/* ---------- list grid ---------- */
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+.item { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.item p { color: var(--ink-2); font-size: .97rem; }
+
+/* ---------- copy kit ---------- */
+.kit { display: grid; gap: 16px; }
+.copy { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; display: grid; gap: 10px; }
+.copy-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.copy-body { white-space: pre-wrap; font-size: .97rem; min-width: 0; overflow-wrap: anywhere; }
+.copy button {
+  font: 500 .82rem var(--f-body); border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; flex-shrink: 0;
+}
+.copy button:hover { border-color: var(--signal); }
+
+/* ---------- v2 ---------- */
+.v2 { margin-top: 64px; background: var(--ink); color: var(--paper); border-radius: 16px; padding: 36px clamp(18px, 4vw, 44px); display: grid; gap: 26px; }
+.v2 .label { color: var(--signal); }
+:root .v2 { --v2-muted: color-mix(in srgb, var(--paper) 70%, var(--ink)); --v2-rule: color-mix(in srgb, var(--paper) 18%, var(--ink)); }
+.v2 .lede, .v2 .item p, .v2 td, .v2 .ms p { color: var(--v2-muted); }
+.v2 .item { border-top-color: var(--v2-rule); }
+.v2 h2 { color: var(--paper); }
+.tracks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .tracks { grid-template-columns: 1fr; } }
+.track-card { border: 1px solid var(--v2-rule); border-radius: 12px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.track-card ul { margin: 0; padding-left: 1.1em; color: var(--v2-muted); display: grid; gap: 6px; font-size: .96rem; }
+.ms-list { display: grid; gap: 0; }
+.ms { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--v2-rule); }
+.ms .when { font: 600 .82rem var(--f-mono); color: var(--signal); letter-spacing: .06em; }
+.ms b { font-weight: 600; }
+
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: .88rem; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="label">Case study · Automotive cybersecurity · Machine learning</span>
+  <h1>EV CAN Bus <span>IDS</span></h1>
+  <p class="lede">A real-time intrusion detection system for electric-vehicle CAN networks. It learns what normal traffic looks like, flags DoS, fuzzing and impersonation attacks within milliseconds, and explains every alert in plain language.</p>
+  <div class="actions">
+    <a class="btn primary" href="https://github.com/SuhailKider/EV-CAN-IDS/tree/claude/dashboard-live-alerts-8mwbj9" target="_blank" rel="noopener">Source code on GitHub ↗</a>
+    <a class="btn" href="https://github.com/SuhailKider/EV-CAN-IDS/blob/claude/dashboard-live-alerts-8mwbj9/docs/video/ev_can_ids_explainer.mp4" target="_blank" rel="noopener">Watch the 3-minute video ↗</a>
+    <a class="btn" href="#run">Run it yourself</a>
+  </div>
+
+  <div class="frame-band" aria-label="Anatomy of a forged CAN frame">
+    <div class="frame-scroll">
+      <div class="frame">
+        <div class="seg"><div class="bits">0</div><div class="name">SOF</div></div>
+        <div class="seg id"><div class="bits">000 1011 0100 · 0x0B4</div><div class="name">Identifier · 11 bit</div></div>
+        <div class="seg"><div class="bits">0</div><div class="name">RTR</div></div>
+        <div class="seg"><div class="bits">0</div><div class="name">IDE</div></div>
+        <div class="seg"><div class="bits">0</div><div class="name">r0</div></div>
+        <div class="seg"><div class="bits">1000</div><div class="name">DLC</div></div>
+        <div class="seg data"><div class="bits">2E E0 3A 98 10 30 7F 31</div><div class="name">Data · 0–8 bytes</div></div>
+        <div class="seg"><div class="bits">CRC-15</div><div class="name">CRC</div></div>
+        <div class="seg"><div class="bits">1</div><div class="name">Del</div></div>
+        <div class="seg"><div class="bits">ACK</div><div class="name">ACK</div></div>
+        <div class="seg"><div class="bits">1111111</div><div class="name">EOF</div></div>
+      </div>
+    </div>
+    <div class="frame-note">
+      <span>This is a <b>forged motor-inverter frame</b> commanding 200 Nm of torque.</span>
+      <span>Nothing in it says who sent it: CAN has <b>no sender field, no signature and no encryption</b>.</span>
+    </div>
+  </div>
+</header>
+
+<section aria-label="Key results">
+  <div class="figures">
+    <div class="fig"><span class="v">99.98<small>%</small></span><span class="k">of attack frames detected (hybrid detector, simulated test set)</span></div>
+    <div class="fig"><span class="v">26→96<small>%</small></span><span class="k">F1 score, Isolation Forest alone vs the hybrid detector</span></div>
+    <div class="fig"><span class="v">0.5<small>%</small></span><span class="k">false alarms on clean traffic, set by calibration</span></div>
+    <div class="fig"><span class="v">~250<small> µs</small></span><span class="k">per frame in pure Python, about 3,500 frames/s</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="label">The problem</span>
+  <h2>One shared network, zero trust built in</h2>
+  <div class="prose">
+    <p>An electric vehicle's battery management system, motor inverter, brakes and steering all talk over a CAN bus. CAN was designed in the 1980s for reliability, not security. Every message is broadcast, and any node can send any identifier.</p>
+    <p>An attacker who reaches the bus through the OBD-II port, a telematics unit or a compromised ECU can flood it, fuzz it, or <strong>impersonate a safety-critical unit</strong>. Standards such as UN&nbsp;R155 and ISO/SAE&nbsp;21434 now require manufacturers to monitor for exactly this.</p>
+  </div>
+</section>
+
+<section>
+  <span class="label">How it works</span>
+  <h2>From raw frames to an explained alert</h2>
+  <div class="pipe">
+    <div class="step"><h3>Read every frame</h3><p>From a live bus, the built-in EV simulator (14 ECUs), or a replay of the HCRL dataset (4.7M messages).</p></div>
+    <div class="step"><h3>12 features</h3><p>Computed per CAN ID as each frame arrives.</p>
+      <div class="chips"><span class="chip">Δt</span><span class="chip">jitter</span><span class="chip">burstiness</span><span class="chip">msg/s</span><span class="chip">entropy</span><span class="chip">bit flips</span><span class="chip">slope</span><span class="chip">correlation</span><span class="chip">prediction error</span></div></div>
+    <div class="step"><h3>Score + rules</h3><p>An Isolation Forest trained on normal traffic only, plus per-ID rules learned from the same data: known IDs, expected period, payload bounds.</p></div>
+    <div class="step"><h3>Incidents</h3><p>Thousands of flagged frames are grouped into one incident, typed as DoS, fuzzing or impersonation, with the reason attached.</p></div>
+    <div class="step"><h3>Alerts</h3><p>A live dashboard with an audible alarm, a JSON log for a SIEM, and Slack or Teams webhooks.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="label">The key finding</span>
+  <h2>Why machine learning alone was not enough</h2>
+  <div class="results">
+    <div class="chart" role="img" aria-label="Recall per attack type: Isolation Forest 0, 50.3 and 33.0 percent; hybrid 100, 100 and 99.8 percent. F1: 26.1 versus 96.0 percent.">
+      <div class="legend"><span><i style="background:var(--muted-bar)"></i>Isolation Forest only</span><span><i style="background:var(--ok)"></i>Hybrid (IF + learned rules)</span></div>
+      <div class="metric"><span class="mname">DoS recall</span>
+        <div class="bar"><div class="track if"><b style="width:0%"></b></div><span class="num">0.0%</span></div>
+        <div class="bar"><div class="track hy"><b style="width:100%"></b></div><span class="num">100%</span></div></div>
+      <div class="metric"><span class="mname">Fuzzing recall</span>
+        <div class="bar"><div class="track if"><b style="width:50.3%"></b></div><span class="num">50.3%</span></div>
+        <div class="bar"><div class="track hy"><b style="width:100%"></b></div><span class="num">100%</span></div></div>
+      <div class="metric"><span class="mname">Impersonation recall</span>
+        <div class="bar"><div class="track if"><b style="width:33%"></b></div><span class="num">33.0%</span></div>
+        <div class="bar"><div class="track hy"><b style="width:99.8%"></b></div><span class="num">99.8%</span></div></div>
+      <div class="metric"><span class="mname">F1 score</span>
+        <div class="bar"><div class="track if"><b style="width:26.06%"></b></div><span class="num">26.1%</span></div>
+        <div class="bar"><div class="track hy"><b style="width:96.01%"></b></div><span class="num">96.0%</span></div></div>
+      <div class="axis"><span>0%</span><span>50%</span><span>100%</span></div>
+    </div>
+    <div class="why">
+      <p>Moving the research notebook onto a live stream exposed two structural blind spots of the Isolation Forest:</p>
+      <ol>
+        <li><strong>It can't learn from a feature that never varies in training.</strong> "Is this a known ID?" is always yes in normal data, so fuzzing with never-seen IDs looks ordinary.</li>
+        <li><strong>It doesn't rank extreme values above the training range.</strong> A 1 ms flood scores like the fastest legitimate ECU.</li>
+      </ol>
+      <p class="callout">The fix stays unsupervised. The rules are learned from the same normal-only data, so no attack examples are ever needed.</p>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Metric · 39,672 frames</th><th class="n">Isolation Forest</th><th class="n">Hybrid</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td class="n">73.18%</td><td class="n win">97.48%</td></tr>
+        <tr><td>Recall</td><td class="n">15.62%</td><td class="n win">99.98%</td></tr>
+        <tr><td>Precision</td><td class="n">78.58%</td><td class="n win">92.34%</td></tr>
+        <tr><td>False-positive rate (incl. frames of the attacked ECU)</td><td class="n">1.85%</td><td class="n">3.60%</td></tr>
+        <tr><td>False-positive rate on clean traffic</td><td class="n">~0.5%</td><td class="n">~0.5%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="label">The product</span>
+  <h2>A live SOC dashboard with a red-team console</h2>
+  <div class="shots">
+    <figure><div class="img"><img src="img/dashboard-attack.png" alt="Dashboard under a multi-stage attack: status UNDER ATTACK, traffic chart with attack bands, alert feed and live confusion matrix" loading="lazy"></div>
+      <figcaption>Under a multi-stage attack: the traffic and score timeline, three explained incidents, and live recall at 100%.</figcaption></figure>
+    <figure><div class="img"><img src="img/dashboard-dos.png" alt="Dashboard during a DoS flood with a critical incident card" loading="lazy"></div>
+      <figcaption>A DoS flood becomes one CRITICAL incident within a second.</figcaption></figure>
+  </div>
+  <div class="two">
+    <div class="item"><h3>Explainable alerts</h3><p>Each incident shows its evidence ("period 5.0 ms vs 10.0 ms expected") and a recommended response.</p></div>
+    <div class="item"><h3>Attack simulator</h3><p>Launch DoS, fuzzing or impersonation against any ECU and watch detection happen live.</p></div>
+    <div class="item"><h3>Live accuracy</h3><p>A confusion matrix, per-attack recall and a threshold slider show the precision/recall trade-off as you move it.</p></div>
+    <div class="item"><h3>Ops-ready</h3><p>Incident lifecycle (open, escalate, resolve, acknowledge), CSV and JSON export, a JSONL log and webhooks.</p></div>
+  </div>
+</section>
+
+<section id="run">
+  <span class="label">Engineering</span>
+  <h2>Built like a product, not a notebook</h2>
+  <div class="two">
+    <div class="item"><h3>Streaming core</h3><p>The notebook's batch pandas features rewritten as an online extractor with constant state per CAN ID. Feature parity with the notebook is checked by tests.</p></div>
+    <div class="item"><h3>Quality</h3><p>20 pytest tests covering the parser, features, detection per attack type, the alert lifecycle and the API. GitHub Actions CI and a Dockerfile.</p></div>
+    <div class="item"><h3>Stack</h3><p class="mono">Python · scikit-learn · NumPy · Flask + SSE · vanilla JS canvas charts · Playwright · ffmpeg</p></div>
+    <div class="item"><h3>Run it</h3><p class="mono">pip install -r requirements.txt<br>python -m can_ids dashboard --open</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="label">Showcase kit</span>
+  <h2>Ready-to-use words about this project</h2>
+  <div class="kit">
+    <div class="copy">
+      <div class="copy-head"><h3>30-second pitch</h3><button type="button" data-copy="pitch">Copy</button></div>
+      <p class="copy-body" id="pitch">I built a real-time intrusion detection system for electric-vehicle CAN networks. It learns normal behaviour from 12 timing and payload features and flags DoS, fuzzing and impersonation attacks in about a quarter of a millisecond per frame. When I moved it from a research notebook to a live stream, I found the Isolation Forest missed every DoS frame. So I added rules learned from the same normal-only data, which took recall from 16% to 99.98% and F1 from 26% to 96%. It ships with a live alert dashboard, an attack simulator, 20 automated tests and CI.</p>
+    </div>
+    <div class="copy">
+      <div class="copy-head"><h3>CV bullets</h3><button type="button" data-copy="cv">Copy</button></div>
+      <p class="copy-body" id="cv">• Built a real-time ML intrusion detection system for EV CAN bus networks (Python, scikit-learn), detecting DoS, fuzzing and impersonation attacks at ~250 µs per frame.
+• Identified structural blind spots of Isolation Forest on streaming CAN data and designed a hybrid detector with learned per-ID rules, raising attack recall from 15.6% to 99.98% and F1 from 26% to 96% at ~0.5% false alarms on clean traffic.
+• Delivered a live SOC dashboard (Flask, Server-Sent Events) with explainable incidents, severity escalation, webhook alerting and a red-team attack simulator; covered by 20 tests and CI.</p>
+    </div>
+    <div class="copy">
+      <div class="copy-head"><h3>LinkedIn post</h3><button type="button" data-copy="post">Copy</button></div>
+      <p class="copy-body" id="post">Your car's brakes, battery and motor trust every message on their network. Anyone who can reach it can pretend to be any of them.
+
+That network is the CAN bus, and for my project I built an intrusion detection system that watches it in real time.
+
+What it does:
+→ Learns normal EV traffic from 12 timing and payload features
+→ Detects DoS, fuzzing and ECU impersonation in ~250 µs per frame
+→ Turns thousands of malicious frames into one explained alert ("motor inverter sending every 5 ms instead of 10")
+
+What I learned: the Isolation Forest from my research notebook caught only 16% of attack frames on a live stream, and missed every DoS frame. Rules learned from the same normal-only data fixed that: recall 99.98%, F1 up from 26% to 96%.
+
+Code, 3-minute demo video and dashboard: github.com/SuhailKider/EV-CAN-IDS
+
+#AutomotiveCybersecurity #MachineLearning #ElectricVehicles #CANbus #ISO21434</p>
+    </div>
+  </div>
+</section>
+
+<section class="v2" aria-labelledby="v2h">
+  <span class="label">Next · version 2 proposal</span>
+  <h2 id="v2h">Telemetry Guardian: physics-aware detection for road and track</h2>
+  <p class="lede">Version 1 watches <em>how</em> frames arrive. Version 2 checks whether <em>what they say</em> is physically possible. That catches a stealthy attacker who silences an ECU and sends perfectly timed, plausible-looking lies, and the same engine catches failing sensors.</p>
+  <div class="tracks">
+    <div class="track-card">
+      <h3>Road · EV cybersecurity</h3>
+      <ul>
+        <li>Decode real signals from CAN using DBC files (speed, torque, pack current, wheel speeds).</li>
+        <li>Learn cross-signal physics: wheel speed vs motor rpm, torque vs current, brake vs deceleration.</li>
+        <li>New attack: a <b>masquerade</b> attack with correct timing and forged values, which v1 cannot see.</li>
+        <li>Separate "attack" from "sensor fault" in the alert.</li>
+      </ul>
+    </div>
+    <div class="track-card">
+      <h3>Track · Formula 1 telemetry</h3>
+      <ul>
+        <li>Use public F1 car telemetry (speed, RPM, gear, throttle, brake, DRS) through the open-source FastF1 library.</li>
+        <li>Build virtual sensors, for example predicting speed from RPM and gear, and flag deviations.</li>
+        <li>Detect events a race engineer cares about: lock-ups, lift-and-coast, unusual DRS use, data dropouts.</li>
+        <li>A race-engineer view of the dashboard: lap traces with anomalies marked.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ms-list">
+    <div class="ms"><span class="when">WEEKS 1–2</span><p><b>Signals.</b> DBC decoding and signal-level simulator; an F1 session loader with cached telemetry.</p></div>
+    <div class="ms"><span class="when">WEEKS 3–4</span><p><b>Physics models.</b> Residual models for each signal pair; baseline vs v1 on masquerade attacks.</p></div>
+    <div class="ms"><span class="when">WEEKS 5–6</span><p><b>Faults vs attacks.</b> Inject sensor faults and forged values; classify and explain them.</p></div>
+    <div class="ms"><span class="when">WEEKS 7–8</span><p><b>Ship.</b> Dashboard v2 with a race-engineer view, ONNX export with an embedded latency benchmark, and a write-up mapped to ISO/SAE 21434.</p></div>
+  </div>
+</section>
+
+<footer>
+  <span>EV CAN Bus IDS · by SuhailKider</span>
+  <span class="mono">github.com/SuhailKider/EV-CAN-IDS</span>
+</footer>
+</div>
+
+<script>
+document.querySelectorAll("[data-copy]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const el = document.getElementById(btn.dataset.copy);
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy"), 1600); };
+    const select = () => {
+      const r = document.createRange(); r.selectNodeContents(el);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = "Selected – press Ctrl+C"; setTimeout(() => (btn.textContent = "Copy"), 2400);
+    };
+    try { navigator.clipboard.writeText(el.innerText).then(done, select); } catch (e) { select(); }
+  });
+});
+</script>
