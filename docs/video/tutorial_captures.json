@@ -1,0 +1,101 @@
+{
+ "_note": "Real terminal output captured from a fresh clone of github.com/SuhailKider/EV-CAN-IDS (branch claude/dashboard-live-alerts-8mwbj9, Python 3.11, Linux). Used by make_tutorial.py.",
+ "clone": [
+  "Cloning into 'EV-CAN-IDS'..."
+ ],
+ "checkout": [
+  "Switched to a new branch 'claude/dashboard-live-alerts-8mwbj9'",
+  "branch 'claude/dashboard-live-alerts-8mwbj9' set up to track 'origin/claude/dashboard-live-alerts-8mwbj9'."
+ ],
+ "install": [
+  "Collecting numpy>=1.24 (from -r requirements.txt (line 1))",
+  "Collecting scikit-learn>=1.3 (from -r requirements.txt (line 2))",
+  "Collecting joblib>=1.3 (from -r requirements.txt (line 3))",
+  "Collecting flask>=3.0 (from -r requirements.txt (line 4))",
+  "Collecting pytest>=7 (from -r requirements-dev.txt (line 2))",
+  "Collecting scipy>=1.10.0 (from scikit-learn>=1.3->-r requirements.txt (line 2))",
+  "Collecting narwhals>=2.0.1 (from scikit-learn>=1.3->-r requirements.txt (line 2))",
+  "  …",
+  "Installing collected packages: threadpoolctl, pygments, pluggy, packaging, numpy, narwhals, markupsafe, itsdangerous, iniconfig, cloudpickle, click, blinker, werkzeug, scipy, pytest, joblib, jinja2, scikit-learn, flask",
+  "Successfully installed blinker-1.9.0 click-8.5.1 cloudpickle-3.1.3 flask-3.1.3 iniconfig-2.3.1 itsdangerous-2.2.0 jinja2-3.1.6 joblib-1.6.0 markupsafe-3.0.4 narwhals-2.29.0 numpy-2.4.6 packaging-26.4 pluggy-1.7.0 pygments-2.21.0 pytest-9.2.0 scikit-learn-1.9.1 scipy-1.17.1 threadpoolctl-3.8.0 werkzeug-3.1.9"
+ ],
+ "pytest": [
+  "....................                                                     [100%]",
+  "20 passed in 6.15s"
+ ],
+ "train": [
+  "01:02:07 INFO    Training on 60 s of simulated normal EV traffic",
+  "01:02:10 INFO    Trained on 28,138 frames in 2.4s; calibrated threshold 0.6550",
+  "{",
+  "  \"model\": \"models/ids_model.joblib\",",
+  "  \"n_train\": 28138,",
+  "  \"threshold\": 0.6550067022516273,",
+  "  \"known_ids\": 14,",
+  "  \"train_score_quantiles\": {",
+  "    \"p1\": 0.37045996815558163,",
+  "    \"p50\": 0.4444032330506018,",
+  "    \"p90\": 0.5079975558825663,",
+  "    \"p99\": 0.6365058365732815,",
+  "    \"p99.9\": 0.7112389303587126",
+  "  }",
+  "}"
+ ],
+ "evaluate": [
+  "01:02:14 INFO    Loaded model from models/ids_model.joblib (28,138 frames, source: simulated EV bus)",
+  "",
+  "================================================================",
+  "DETECTION METRICS  (IF threshold 0.6550, 39,672 frames: 12,004 attack / 27,668 normal)",
+  "================================================================",
+  "                          Isolation Forest   Hybrid (IF + rules)",
+  "Accuracy                            73.18%                97.48%",
+  "Recall                              15.62%                99.98%",
+  "Precision                           78.58%                92.34%",
+  "False-positive rate                  1.85%                 3.60%",
+  "F1                                  26.06%                96.01%",
+  "True Positives                       1,875                12,001",
+  "False Positives                        511                   995",
+  "True Negatives                      27,157                26,673",
+  "False Negatives                     10,129                     3",
+  "  dos recall                          0.0%                100.0%",
+  "  fuzzy recall                       50.3%                100.0%",
+  "  impersonation recall               33.0%                 99.8%",
+  "================================================================",
+  "Metrics written to reports/metrics.json"
+ ],
+ "dashboard": [
+  "01:05:02 INFO    Loaded model from models/ids_model.joblib (28,138 frames, source: simulated EV bus)",
+  "01:05:02 INFO    Writing alert events to logs/alerts.jsonl",
+  "01:05:02 INFO    Dashboard running at http://localhost:8050",
+  " * Serving Flask app 'can_ids.dashboard.app'",
+  " * Debug mode: off"
+ ],
+ "monitor": [
+  "01:02:18 INFO    Loaded model from models/ids_model.joblib (28,138 frames, source: simulated EV bus)",
+  "01:02:18 INFO    Writing alert events to logs/alerts.jsonl",
+  "01:02:18 INFO    Monitoring simulated EV bus - press Ctrl+C to stop",
+  "01:02:19 WARNING [CRITICAL] OPENED #1 Denial-of-Service flood on 0x000 (5 frames, peak 5/s, score 0.611)",
+  "01:02:22 WARNING [CRITICAL] RESOLVED #1 Denial-of-Service flood on 0x000 (6000 frames, peak 1001/s, score 0.611)",
+  "01:02:23 INFO    status=SECURE bus=15s frames=13,043 fps=469 flagged/s=3.0 incidents=0 active",
+  "01:02:24 WARNING [HIGH] OPENED #2 Fuzzing / random injection on 0x5DA, 0x661, 0x2BD, 0x0DC, 0x556 (5 frames, peak 5/s, score 0.543)",
+  "01:02:27 WARNING [HIGH] RESOLVED #2 Fuzzing / random injection on 0x223, 0x641, 0x332, 0x0AE, 0x2D2 (2387 frames, peak 403/s, score 0.783)",
+  "01:02:28 INFO    status=SECURE bus=30s frames=22,490 fps=469 flagged/s=4.0 incidents=0 active",
+  "01:02:29 WARNING [HIGH] OPENED #3 ECU impersonation / spoofing on Motor inverter (8 frames, peak 8/s, score 0.670)",
+  "01:02:32 WARNING [HIGH] RESOLVED #3 ECU impersonation / spoofing on Motor inverter (1200 frames, peak 203/s, score 0.707)",
+  "01:02:33 INFO    status=SECURE bus=45s frames=30,141 fps=469 flagged/s=2.0 incidents=0 active"
+ ],
+ "help": [
+  "usage: can_ids [-h] {dashboard,monitor,train,evaluate} ...",
+  "",
+  "EV CAN bus intrusion detection system",
+  "",
+  "positional arguments:",
+  "  {dashboard,monitor,train,evaluate}",
+  "    dashboard           run the live web dashboard",
+  "    monitor             headless real-time monitor with console alerts",
+  "    train               train and save a model",
+  "    evaluate            evaluate on simulated attacks or HCRL files",
+  "",
+  "options:",
+  "  -h, --help            show this help message and exit"
+ ]
+}

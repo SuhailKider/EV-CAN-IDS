@@ -391,7 +391,7 @@ async def record(script: List[Segment], voice: Voice, work: Path, dashboard_url:
     frames_dir.mkdir(parents=True)
     rec = Recorder(frames_dir)
     timeline: list = []
-    exe = next(Path("/opt/pw-browsers").glob("chromium-*/chrome-linux/chrome"), None)
+    exe = next(Path("/opt/pw-browsers").glob("chromium-*/chrome-linux*/chrome"), None)
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=str(exe) if exe else None)
         ctx = await browser.new_context(viewport={"width": VIEW_W, "height": VIEW_H}, device_scale_factor=SCALE)

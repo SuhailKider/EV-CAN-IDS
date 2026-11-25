@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EV CAN IDS · setup tutorial scenes</title>
+<style>
+  :root {
+    --bg: #0b1017; --panel: #121a24; --panel-2: #172231; --line: #233246;
+    --text: #e6edf5; --muted: #8a9bb0; --accent: #38bdf8; --good: #22c55e;
+    --warn: #f59e0b; --bad: #ef4444; --violet: #a78bfa;
+    --term: #05080d;
+    --mono: "DejaVu Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+    --sans: Inter, "DejaVu Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1600px; height: 900px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(1100px 600px at 85% -10%, rgba(56,189,248,.09), transparent 60%); }
+
+  /* ---------- chapter bar ---------- */
+  #chapters { position: fixed; top: 0; left: 0; right: 0; height: 64px; display: flex; align-items: center; gap: 8px;
+    padding: 0 40px; border-bottom: 1px solid var(--line); background: rgba(11,16,23,.92); z-index: 20; }
+  #chapters .brand { font-weight: 700; font-size: 18px; margin-right: 18px; display: flex; gap: 10px; align-items: center; }
+  #chapters .brand svg { width: 26px; height: 26px; }
+  .chip { font: 500 14px var(--sans); color: var(--muted); padding: 6px 11px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .chip b { font-family: var(--mono); font-weight: 600; margin-right: 6px; color: var(--muted); }
+  .chip.done { color: var(--good); } .chip.done b { color: var(--good); }
+  .chip.now { color: var(--text); border-color: var(--accent); background: rgba(56,189,248,.12); }
+  .chip.now b { color: var(--accent); }
+
+  .scene { position: absolute; inset: 64px 0 0 0; padding: 44px 70px; display: none; }
+  .scene.active { display: block; animation: fade .45s ease; }
+  @keyframes fade { from { opacity: 0; } }
+  .kicker { color: var(--accent); font: 600 16px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  h2 { font-size: 46px; margin: 10px 0 0; letter-spacing: -.02em; }
+  .sub { color: var(--muted); font-size: 22px; margin-top: 10px; }
+
+  /* ---------- title ---------- */
+  #title { text-align: center; padding-top: 120px; }
+  #title h1 { font-size: 84px; margin: 18px 0 0; letter-spacing: -.03em; }
+  #title .shield { width: 110px; height: 110px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 46px auto 0; max-width: 1200px; }
+  .toc span { font: 500 19px var(--sans); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  .toc b { font-family: var(--mono); color: var(--accent); margin-right: 8px; }
+
+  /* ---------- list ---------- */
+  .list { display: grid; gap: 16px; margin-top: 40px; max-width: 1200px; }
+  .item { display: grid; grid-template-columns: 56px 1fr; gap: 18px; align-items: start; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px 24px; opacity: 0; transform: translateY(14px); transition: all .6s cubic-bezier(.2,.8,.2,1); }
+  .item.on { opacity: 1; transform: none; }
+  .item .ic { width: 56px; height: 56px; border-radius: 12px; background: var(--panel-2); display: grid; place-items: center; font-size: 28px; }
+  .item h3 { margin: 0; font-size: 26px; }
+  .item p { margin: 6px 0 0; color: var(--muted); font-size: 20px; line-height: 1.45; }
+  .item code { font-family: var(--mono); color: var(--accent); background: var(--panel-2); padding: 2px 7px; border-radius: 6px; font-size: .92em; }
+
+  /* ---------- terminal ---------- */
+  #term .layout { display: grid; grid-template-columns: 1fr 380px; gap: 28px; margin-top: 26px; }
+  .tw { background: var(--term); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px rgba(0,0,0,.45); overflow: hidden; }
+  .tw .bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: #0a0f16; }
+  .tw .bar i { width: 13px; height: 13px; border-radius: 50%; background: #334155; }
+  .tw .bar i:nth-child(1) { background: #ef4444aa; } .tw .bar i:nth-child(2) { background: #f59e0baa; } .tw .bar i:nth-child(3) { background: #22c55eaa; }
+  .tw .bar span { margin-left: 12px; color: var(--muted); font: 14px var(--mono); }
+  #screen { height: 610px; overflow: hidden; padding: 18px 22px; font: 17px/1.55 var(--mono); white-space: pre; display: flex; flex-direction: column; justify-content: flex-end; }
+  #screen .l { min-height: 1.55em; }
+  .p { color: var(--good); } .cwd { color: var(--accent); }
+  .cmd { color: #fff; }
+  .o { color: #b8c4d2; } .dim { color: var(--muted); } .ok { color: var(--good); } .crit { color: #ff6b6b; } .high { color: var(--warn); }
+  .hdr { color: var(--accent); } .win { color: var(--good); font-weight: 700; }
+  .cursor { display: inline-block; width: 10px; height: 1.15em; background: #e6edf5; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .side { display: grid; gap: 14px; align-content: start; }
+  .note { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; font-size: 19px; line-height: 1.45;
+    opacity: 0; transform: translateX(14px); transition: all .5s ease; }
+  .note.on { opacity: 1; transform: none; }
+  .note h4 { margin: 0 0 6px; font-size: 14px; font-family: var(--mono); color: var(--accent); letter-spacing: .1em; text-transform: uppercase; }
+  .note code { font-family: var(--mono); font-size: 16px; color: var(--text); background: var(--panel-2); padding: 1px 6px; border-radius: 5px; }
+  .note.warn { border-color: #f59e0b88; } .note.warn h4 { color: var(--warn); }
+  .note.good { border-color: #22c55e88; } .note.good h4 { color: var(--good); }
+
+  /* ---------- code ---------- */
+  #code .layout { display: grid; grid-template-columns: 1fr 400px; gap: 28px; margin-top: 22px; }
+  .cw { background: var(--term); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .cw .tab { padding: 12px 18px; border-bottom: 1px solid var(--line); font: 15px var(--mono); color: var(--muted); background: #0a0f16; }
+  .cw .tab b { color: var(--text); font-weight: 500; }
+  #codebody { padding: 14px 0; font: 16px/1.6 var(--mono); height: 600px; overflow: hidden; }
+  .cl { display: grid; grid-template-columns: 62px 1fr; white-space: pre; padding-right: 16px; transition: background .4s, opacity .4s; }
+  .cl .ln { color: #4b5a6c; text-align: right; padding-right: 18px; user-select: none; }
+  #codebody.focus .cl { opacity: .38; }
+  #codebody.focus .cl.hl { opacity: 1; background: rgba(56,189,248,.1); box-shadow: inset 3px 0 0 var(--accent); }
+  .k { color: #c792ea; } .s { color: #c3e88d; } .c { color: #6b7d91; font-style: italic; } .n { color: #f78c6c; } .f { color: #82aaff; } .sf { color: #ffcb6b; }
+
+  /* ---------- architecture ---------- */
+  .arch { margin-top: 34px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .mod { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; opacity: .28; transition: all .5s ease; }
+  .mod.on { opacity: 1; border-color: var(--accent); box-shadow: 0 0 0 1px rgba(56,189,248,.25); }
+  .mod b { font: 600 18px var(--mono); color: var(--accent); }
+  .mod p { margin: 8px 0 0; color: var(--muted); font-size: 17px; line-height: 1.4; }
+  .flow { grid-column: 1 / -1; margin-top: 10px; text-align: center; font: 18px var(--mono); color: var(--muted); }
+  .flow b { color: var(--text); font-weight: 500; }
+
+  /* ---------- cheat sheet ---------- */
+  .cheat { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+  .cheat div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+  .cheat code { font: 18px var(--mono); color: var(--text); }
+  .cheat span { display: block; color: var(--muted); font-size: 16px; margin-top: 4px; }
+
+  #cap { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: 1180px; text-align: center;
+    background: rgba(5,8,13,.88); border: 1px solid rgba(138,155,176,.28); color: #f1f5f9; font: 500 23px/1.4 var(--sans);
+    padding: 11px 22px; border-radius: 12px; opacity: 0; transition: opacity .25s; z-index: 100; }
+  #cap.on { opacity: 1; }
+</style>
+</head>
+<body>
+<nav id="chapters"></nav>
+
+<section class="scene" id="title">
+  <svg class="shield" viewBox="0 0 32 32"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#22c55e"/><path d="M17.5 8 11 18h4.5l-1 6L21 14h-4.5z" fill="#0b1017"/></svg>
+  <h1>Set up &amp; run EV CAN IDS</h1>
+  <div class="sub">From a fresh clone to a live attack demo, step by step</div>
+  <div class="toc" id="toc"></div>
+</section>
+
+<section class="scene" id="list">
+  <div class="kicker" id="list-k"></div>
+  <h2 id="list-h"></h2>
+  <div class="list" id="list-items"></div>
+</section>
+
+<section class="scene" id="term">
+  <div class="kicker" id="term-k"></div>
+  <h2 id="term-h"></h2>
+  <div class="layout">
+    <div class="tw"><div class="bar"><i></i><i></i><i></i><span id="term-title">bash — EV-CAN-IDS</span></div><div id="screen"></div></div>
+    <div class="side" id="notes"></div>
+  </div>
+</section>
+
+<section class="scene" id="code">
+  <div class="kicker" id="code-k"></div>
+  <h2 id="code-h"></h2>
+  <div class="layout">
+    <div class="cw"><div class="tab" id="code-tab"></div><div id="codebody"></div></div>
+    <div class="side" id="code-notes"></div>
+  </div>
+</section>
+
+<section class="scene" id="arch">
+  <div class="kicker">How it's implemented</div>
+  <h2>The <span style="font-family:var(--mono);color:var(--accent)">can_ids</span> package, one job per module</h2>
+  <div class="arch">
+    <div class="mod" data-m="frame"><b>frame.py</b><p>CANFrame dataclass and the HCRL log parser.</p></div>
+    <div class="mod" data-m="simulator"><b>simulator.py</b><p>14 simulated EV ECUs, HCRL replay, and the DoS / fuzzy / impersonation injector.</p></div>
+    <div class="mod" data-m="features"><b>features.py</b><p>12 behavioural features, computed one frame at a time per CAN ID.</p></div>
+    <div class="mod" data-m="model"><b>model.py</b><p>Isolation Forest, threshold calibration, learned rules, attack typing, explanations.</p></div>
+    <div class="mod" data-m="engine"><b>engine.py</b><p>The real-time loop: source → features → score → rules → alerts → stats.</p></div>
+    <div class="mod" data-m="alerts"><b>alerts.py</b><p>Groups flagged frames into incidents; console, JSONL and webhook sinks.</p></div>
+    <div class="mod" data-m="dashboard"><b>dashboard/</b><p>Flask app pushing live state to the browser over Server-Sent Events.</p></div>
+    <div class="mod" data-m="cli"><b>cli.py</b><p>The four commands: dashboard, monitor, train, evaluate.</p></div>
+    <div class="flow" id="flow"><b>CAN frame</b> → features.py → model.py → engine.py → alerts.py → <b>dashboard · log · webhook</b></div>
+  </div>
+</section>
+
+<section class="scene" id="cheat">
+  <div class="kicker">Cheat sheet</div>
+  <h2>Everything in one place</h2>
+  <div class="cheat">
+    <div><code>python -m venv .venv &amp;&amp; source .venv/bin/activate</code><span>Isolated environment (Windows: .venv\Scripts\activate)</span></div>
+    <div><code>pip install -r requirements-dev.txt</code><span>Dependencies + pytest</span></div>
+    <div><code>pytest -q</code><span>20 tests should pass</span></div>
+    <div><code>python -m can_ids train</code><span>Train on simulated normal traffic (~3 s)</span></div>
+    <div><code>python -m can_ids evaluate</code><span>Isolation Forest vs hybrid metrics</span></div>
+    <div><code>python -m can_ids dashboard --open</code><span>Live dashboard at localhost:8050</span></div>
+    <div><code>python -m can_ids monitor --demo</code><span>Terminal-only alerts</span></div>
+    <div><code>docker build -t ev-can-ids . &amp;&amp; docker run -p 8050:8050 ev-can-ids</code><span>Run in a container</span></div>
+  </div>
+</section>
+
+<div id="cap"></div>
+
+<script>
+const CHAPTERS = ["Prereqs", "Get code", "Install", "Test", "Train", "Evaluate", "Code tour", "Dashboard", "More"];
+const nav = document.getElementById("chapters");
+nav.innerHTML = '<span class="brand"><svg viewBox="0 0 32 32"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#22c55e"/></svg>EV CAN IDS · Tutorial</span>' +
+  CHAPTERS.map((c, i) => `<span class="chip" data-i="${i}"><b>${i + 1}</b>${c}</span>`).join("");
+document.getElementById("toc").innerHTML = CHAPTERS.map((c, i) => `<span><b>${i + 1}</b>${c}</span>`).join("");
+
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+window.chapter = (i) => {
+  document.querySelectorAll("#chapters .chip").forEach((c) => {
+    const k = +c.dataset.i;
+    c.className = "chip" + (k < i ? " done" : k === i ? " now" : "");
+  });
+};
+window.showScene = (id) => document.querySelectorAll(".scene").forEach((s) => s.classList.toggle("active", s.id === id));
+window.caption = (t) => { const c = document.getElementById("cap"); c.textContent = t || ""; c.classList.toggle("on", !!t); };
+
+// ---------- list scene ----------
+window.list = (kicker, title, items) => {
+  document.getElementById("list-k").textContent = kicker;
+  document.getElementById("list-h").textContent = title;
+  document.getElementById("list-items").innerHTML = items.map(([ic, h, p]) =>
+    `<div class="item"><div class="ic">${ic}</div><div><h3>${h}</h3><p>${p}</p></div></div>`).join("");
+  showScene("list");
+};
+window.reveal = (i) => document.querySelectorAll("#list-items .item")[i]?.classList.add("on");
+
+// ---------- terminal scene ----------
+const screen = document.getElementById("screen");
+const PROMPT = '<span class="p">➜</span> <span class="cwd">EV-CAN-IDS</span> ';
+let cwdPrompt = PROMPT;
+window.term = (kicker, title, keep) => {
+  document.getElementById("term-k").textContent = kicker;
+  document.getElementById("term-h").textContent = title;
+  document.getElementById("notes").innerHTML = "";
+  if (!keep) screen.innerHTML = "";
+  showScene("term");
+  promptLine();
+};
+window.setPrompt = (dir) => { cwdPrompt = `<span class="p">➜</span> <span class="cwd">${dir}</span> `; };
+function promptLine() {
+  screen.querySelector(".cursor")?.remove();
+  const l = document.createElement("div");
+  l.className = "l";
+  l.innerHTML = cwdPrompt + '<span class="cmd"></span><span class="cursor"></span>';
+  screen.appendChild(l);
+  trim();
+  return l;
+}
+function trim() { while (screen.children.length > 60) screen.firstChild.remove(); }
+window.type = async (cmd, speed = 32) => {
+  let l = screen.lastElementChild;
+  if (!l || !l.querySelector(".cmd") || l.querySelector(".cmd").textContent) l = promptLine();
+  const span = l.querySelector(".cmd");
+  for (const ch of cmd) { span.textContent += ch; await sleep(speed); }
+  await sleep(250);
+  l.querySelector(".cursor")?.remove();
+};
+function cls(line) {
+  if (/\[CRITICAL\]/.test(line)) return "crit";
+  if (/\[HIGH\]/.test(line)) return "high";
+  if (/passed|Successfully|✓/.test(line)) return "ok";
+  if (/^={4,}|DETECTION METRICS|Isolation Forest +Hybrid/.test(line.trim())) return "hdr";
+  if (/^\s*(Recall|F1|Accuracy)\b/.test(line)) return "o";
+  if (/INFO|^\s*Collecting|^\s*Using cached|^\s*#/.test(line)) return "dim";
+  return "o";
+}
+window.out = async (lines, gap = 60, prompt = true) => {
+  screen.querySelector(".cursor")?.remove();
+  for (const line of lines) {
+    const l = document.createElement("div");
+    l.className = "l " + cls(line);
+    l.innerHTML = esc(line).replace(/(99\.98%|96\.01%|100\.0%|20 passed)/g, '<span class="win">$1</span>') || " ";
+    screen.appendChild(l);
+    trim();
+    await sleep(gap);
+  }
+  if (prompt) promptLine();
+};
+window.note = (kind, head, html) => {
+  const n = document.createElement("div");
+  n.className = "note " + (kind || "");
+  n.innerHTML = `<h4>${head}</h4>${html}`;
+  document.getElementById("notes").appendChild(n);
+  requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add("on")));
+};
+
+// ---------- code scene ----------
+// Single-pass tokenizer: each piece of the line is classified once, so
+// inserted markup is never re-scanned.
+const TOKEN = /(#.*$)|(f?"(?:[^"\\]|\\.)*"|f?'(?:[^'\\]|\\.)*')|\b(\d+(?:\.\d+)?)\b|\b(def|return|if|else|elif|for|in|while|not|and|or|is|None|True|False|with|lambda|import|from|class|raise|self)\b|\b([A-Za-z_]\w*)(?=\()/g;
+function hiPy(line) {
+  let html = "", last = 0, m;
+  TOKEN.lastIndex = 0;
+  while ((m = TOKEN.exec(line))) {
+    html += esc(line.slice(last, m.index));
+    const cls = m[1] ? "c" : m[2] ? "s" : m[3] ? "n" : m[4] ? "k" : "f";
+    html += `<span class="${cls}">${esc(m[0])}</span>`;
+    last = m.index + m[0].length;
+  }
+  return html + esc(line.slice(last));
+}
+// rows: [[lineNumber, text], ...]; a null lineNumber renders a "…" gap row
+window.code = (kicker, title, file, rows) => {
+  document.getElementById("code-k").textContent = kicker;
+  document.getElementById("code-h").textContent = title;
+  const nums = rows.map((r) => r[0]).filter((n) => n != null);
+  document.getElementById("code-tab").innerHTML = `<b>${file}</b>  ·  lines ${Math.min(...nums)}–${Math.max(...nums)}`;
+  const body = document.getElementById("codebody");
+  body.className = "";
+  body.innerHTML = rows.map(([n, l]) => n == null
+    ? `<div class="cl" data-n="0"><span class="ln">⋮</span><span class="c">    …</span></div>`
+    : `<div class="cl" data-n="${n}"><span class="ln">${n}</span><span>${hiPy(l)}</span></div>`).join("");
+  document.getElementById("code-notes").innerHTML = "";
+  showScene("code");
+};
+window.hl = (a, b) => {
+  const body = document.getElementById("codebody");
+  body.classList.add("focus");
+  body.querySelectorAll(".cl").forEach((l) => { const n = +l.dataset.n; l.classList.toggle("hl", n >= a && n <= b); });
+};
+window.codeNote = (head, html) => {
+  const n = document.createElement("div");
+  n.className = "note";
+  n.innerHTML = `<h4>${head}</h4>${html}`;
+  document.getElementById("code-notes").appendChild(n);
+  requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add("on")));
+};
+
+// ---------- architecture ----------
+window.mod = (names) => names.forEach((m) => document.querySelector(`.mod[data-m="${m}"]`)?.classList.add("on"));
+
+chapter(-1);
+showScene("title");
+</script>
+</body>
+</html>
