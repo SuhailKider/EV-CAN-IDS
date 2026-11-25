@@ -92,7 +92,7 @@ def find_line(path, needle, start=1):
     raise ValueError(f"{needle!r} not found in {path}")
 
 
-def strip_ts(lines, width=104):
+def strip_ts(lines, width=95):
     out_ = []
     for l in lines:
         if len(l) > 9 and l[2] == ":" and l[5] == ":" and l[8] == " ":
@@ -198,7 +198,7 @@ def build_script():
               "joblib and flask. It took about four seconds here.",
               "Install the dependencies. requirements-dev.txt adds pytest to numpy, scikit-learn, joblib and Flask. "
               "It took about 4 seconds here.",
-              action=act(typ("pip install -r requirements-dev.txt"), out(strip_ts(install_out, 100), 140),
+              action=act(typ("pip install -r requirements-dev.txt"), out(strip_ts(install_out), 140),
                          note("good", "Installed", "numpy · scikit-learn · joblib · flask · pytest")), hold=0.4),
         ]),
         # ------------------------------------------------------------ 4 test

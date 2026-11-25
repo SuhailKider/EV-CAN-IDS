@@ -457,7 +457,8 @@ def assemble(frames: list, timeline: list, work: Path, out: Path, ffmpeg: str) -
     out.parent.mkdir(parents=True, exist_ok=True)
     cmd = [ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
            "-f", "concat", "-safe", "0", "-i", str(concat), "-i", str(wav),
-           "-vf", "scale=1920:1080:flags=lanczos,fps=30,format=yuv420p",
+           "-vf", "scale=1920:1080:flags=lanczos:out_range=tv,fps=30,format=yuv420p",
+           "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
            "-c:v", "libx264", "-preset", "slow", "-crf", "22", "-tune", "stillimage",
            "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", "-shortest", str(out)]
     subprocess.run(cmd, check=True)

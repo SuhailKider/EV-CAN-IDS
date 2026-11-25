@@ -60,7 +60,7 @@
   .tw .bar i { width: 13px; height: 13px; border-radius: 50%; background: #334155; }
   .tw .bar i:nth-child(1) { background: #ef4444aa; } .tw .bar i:nth-child(2) { background: #f59e0baa; } .tw .bar i:nth-child(3) { background: #22c55eaa; }
   .tw .bar span { margin-left: 12px; color: var(--muted); font: 14px var(--mono); }
-  #screen { height: 610px; overflow: hidden; padding: 18px 22px; font: 17px/1.55 var(--mono); white-space: pre; display: flex; flex-direction: column; justify-content: flex-end; }
+  #screen { height: 500px; overflow: hidden; padding: 18px 22px; font: 17px/1.55 var(--mono); white-space: pre; }
   #screen .l { min-height: 1.55em; }
   .p { color: var(--good); } .cwd { color: var(--accent); }
   .cmd { color: #fff; }
@@ -82,7 +82,7 @@
   .cw { background: var(--term); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
   .cw .tab { padding: 12px 18px; border-bottom: 1px solid var(--line); font: 15px var(--mono); color: var(--muted); background: #0a0f16; }
   .cw .tab b { color: var(--text); font-weight: 500; }
-  #codebody { padding: 14px 0; font: 16px/1.6 var(--mono); height: 600px; overflow: hidden; }
+  #codebody { padding: 14px 0; font: 16px/1.6 var(--mono); height: 510px; overflow: hidden; }
   .cl { display: grid; grid-template-columns: 62px 1fr; white-space: pre; padding-right: 16px; transition: background .4s, opacity .4s; }
   .cl .ln { color: #4b5a6c; text-align: right; padding-right: 18px; user-select: none; }
   #codebody.focus .cl { opacity: .38; }
@@ -228,11 +228,12 @@ function promptLine() {
   trim();
   return l;
 }
-function trim() { while (screen.children.length > 60) screen.firstChild.remove(); }
+function trim() { while (screen.children.length > 60) screen.firstChild.remove(); screen.scrollTop = screen.scrollHeight; }
 window.type = async (cmd, speed = 32) => {
   let l = screen.lastElementChild;
   if (!l || !l.querySelector(".cmd") || l.querySelector(".cmd").textContent) l = promptLine();
   const span = l.querySelector(".cmd");
+  screen.scrollTop = screen.scrollHeight;
   for (const ch of cmd) { span.textContent += ch; await sleep(speed); }
   await sleep(250);
   l.querySelector(".cursor")?.remove();
